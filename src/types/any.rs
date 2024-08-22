@@ -1316,7 +1316,7 @@ impl<'py> PyAnyMethods<'py> for Bound<'py, PyAny> {
             // Safety: type_check is responsible for ensuring that the type is correct
             Ok(unsafe { self.downcast_unchecked() })
         } else {
-            Err(DowncastError::new(self, T::NAME))
+            Err(DowncastError::new(self, T::error_name()))
         }
     }
 
@@ -1329,7 +1329,7 @@ impl<'py> PyAnyMethods<'py> for Bound<'py, PyAny> {
             // Safety: type_check is responsible for ensuring that the type is correct
             Ok(unsafe { self.downcast_into_unchecked() })
         } else {
-            Err(DowncastIntoError::new(self, T::NAME))
+            Err(DowncastIntoError::new(self, T::error_name()))
         }
     }
 
@@ -1342,7 +1342,7 @@ impl<'py> PyAnyMethods<'py> for Bound<'py, PyAny> {
             // Safety: is_exact_instance_of is responsible for ensuring that the type is correct
             Ok(unsafe { self.downcast_unchecked() })
         } else {
-            Err(DowncastError::new(self, T::NAME))
+            Err(DowncastError::new(self, T::error_name()))
         }
     }
 
@@ -1355,7 +1355,7 @@ impl<'py> PyAnyMethods<'py> for Bound<'py, PyAny> {
             // Safety: is_exact_instance_of is responsible for ensuring that the type is correct
             Ok(unsafe { self.downcast_into_unchecked() })
         } else {
-            Err(DowncastIntoError::new(self, T::NAME))
+            Err(DowncastIntoError::new(self, T::error_name()))
         }
     }
 

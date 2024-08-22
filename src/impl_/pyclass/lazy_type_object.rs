@@ -51,7 +51,7 @@ impl<T: PyClass> LazyTypeObject<T> {
     pub fn get_or_init<'py>(&self, py: Python<'py>) -> &Bound<'py, PyType> {
         self.get_or_try_init(py).unwrap_or_else(|err| {
             err.print(py);
-            panic!("failed to create type object for {}", T::NAME)
+            panic!("failed to create type object for {}", T::error_name())
         })
     }
 

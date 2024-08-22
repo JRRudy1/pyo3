@@ -184,7 +184,7 @@ pub trait PyWeakrefMethods<'py> {
             Some(object) if T::type_check(&object) => {
                 Ok(Some(unsafe { object.downcast_unchecked() }))
             }
-            Some(object) => Err(DowncastError::new(&object, T::NAME).into()),
+            Some(object) => Err(DowncastError::new(&object, T::error_name()).into()),
         }
     }
 
@@ -492,7 +492,7 @@ pub trait PyWeakrefMethods<'py> {
             Some(object) if object.is_exact_instance_of::<T>() => {
                 Ok(Some(unsafe { object.downcast_unchecked() }))
             }
-            Some(object) => Err(DowncastError::new(&object, T::NAME).into()),
+            Some(object) => Err(DowncastError::new(&object, T::error_name()).into()),
         }
     }
 

@@ -1,9 +1,9 @@
 //! Python type object information
-
 use crate::ffi_ptr_ext::FfiPtrExt;
 use crate::types::any::PyAnyMethods;
 use crate::types::{PyAny, PyType};
 use crate::{ffi, Bound, Python};
+use std::borrow::Cow;
 
 /// `T: PyLayout<U>` represents that `T` is a concrete representation of `U` in the Python heap.
 /// E.g., `PyClassObject` is a concrete representation of all `pyclass`es, and `ffi::PyObject`
@@ -72,6 +72,12 @@ pub unsafe trait PyTypeInfo: Sized {
     fn is_exact_type_of_bound(object: &Bound<'_, PyAny>) -> bool {
         unsafe { ffi::Py_TYPE(object.as_ptr()) == Self::type_object_raw(object.py()) }
     }
+
+    /// Name of the type for use in error messages.
+    #[inline]
+    fn error_name() -> Cow<'static, str> {
+        Cow::Borrowed(Self::NAME)
+    }
 }
 
 /// Implemented by types which can be used as a concrete Python type inside `Py<T>` smart pointers.
@@ -83,6 +89,12 @@ pub trait PyTypeCheck {
     ///
     /// This should be equivalent to the Python expression `isinstance(object, Self)`.
     fn type_check(object: &Bound<'_, PyAny>) -> bool;
+
+    /// Name of the type for use in error messages.
+    #[inline]
+    fn error_name() -> Cow<'static, str> {
+        Cow::Borrowed(Self::NAME)
+    }
 }
 
 impl<T> PyTypeCheck for T
@@ -94,6 +106,11 @@ where
     #[inline]
     fn type_check(object: &Bound<'_, PyAny>) -> bool {
         T::is_type_of_bound(object)
+    }
+
+    #[inline]
+    fn error_name() -> Cow<'static, str> {
+        <T as PyTypeInfo>::error_name()
     }
 }
 
@@ -123,5 +140,43 @@ pub(crate) unsafe fn get_tp_free(tp: *mut ffi::PyTypeObject) -> ffi::freefunc {
         let ptr = ffi::PyType_GetSlot(tp, ffi::Py_tp_free);
         debug_assert_ne!(ptr, std::ptr::null_mut());
         std::mem::transmute(ptr)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::types::{PyInt, PyString};
+    use crate::PyTypeCheck;
+
+    #[repr(transparent)]
+    struct Wrapper<T>(PyAny, std::marker::PhantomData<T>);
+
+    impl<T: PyTypeCheck> PyTypeCheck for Wrapper<T> {
+        const NAME: &'static str = "Wrapper<T>";
+
+        fn type_check(object: &Bound<'_, PyAny>) -> bool {
+            T::type_check(object)
+        }
+
+        fn error_name() -> std::borrow::Cow<'static, str> {
+            format!("Wrapper<{}>", std::any::type_name::<T>()).into()
+        }
+    }
+
+    #[test]
+    fn test_downcast_error() {
+        Python::with_gil(|py| {
+            let obj = PyString::new(py, "qwer").into_any();
+            assert!(obj.downcast::<Wrapper<PyString>>().is_ok());
+            assert_eq!(
+                format!("{}", obj.downcast::<Wrapper<PyInt>>().unwrap_err()),
+                format!(
+                    "'{}' object cannot be converted to 'Wrapper<{}>'",
+                    obj.get_type().qualname().unwrap(),
+                    std::any::type_name::<PyInt>()
+                )
+            );
+        });
     }
 }

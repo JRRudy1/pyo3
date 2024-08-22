@@ -757,7 +757,7 @@ impl<'a, 'py> Borrowed<'a, 'py, PyAny> {
             // Safety: type_check is responsible for ensuring that the type is correct
             Ok(unsafe { self.downcast_unchecked() })
         } else {
-            Err(DowncastError::new_from_borrowed(self, T::NAME))
+            Err(DowncastError::new_from_borrowed(self, T::error_name()))
         }
     }
 
